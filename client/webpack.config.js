@@ -7,12 +7,12 @@ module.exports = {
     filename: 'bundle.js',
     path: path.resolve(__dirname, 'dist'),
   },
-  // devServer: {
-  //   contentBase: path.resolve(__dirname + "/dist"),
-  //   publicPath: '/',
-  //   inline: true,
-  //   port: 8080,
-  // },
+  devServer: {
+    contentBase: path.resolve(__dirname + "/dist"),
+    publicPath: '/',
+    inline: true,
+    port: 8080,
+  },
   watch: true,
   devtool: 'source-map'
 };
