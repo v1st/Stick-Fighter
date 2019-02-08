@@ -3,10 +3,8 @@ const c = document.getElementById('canvas').getContext('2d');
 window.addEventListener('resize', resize);
 
 function resize() {
-  canvas.width = innerWidth;
-  canvas.height = innerHeight;
-
-  init();
+  canvas.width = 1080;
+  canvas.height = 720;
 }
 
 function init() {
