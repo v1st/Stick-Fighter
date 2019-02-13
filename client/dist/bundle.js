@@ -81,7 +81,7 @@
 /******/
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 0);
+/******/ 	return __webpack_require__(__webpack_require__.s = "./src/index.js");
 /******/ })
 /************************************************************************/
 /******/ ({
@@ -4612,7 +4612,7 @@ if (typeof WebSocket !== 'undefined') {
   BrowserWebSocket = self.WebSocket || self.MozWebSocket;
 } else {
   try {
-    NodeWebSocket = __webpack_require__(/*! ws */ 1);
+    NodeWebSocket = __webpack_require__(/*! ws */ 0);
   } catch (e) { }
 }
 
@@ -9862,10 +9862,10 @@ module.exports = yeast;
 
 /***/ }),
 
-/***/ "./src/gamefiles/sockets.js":
-/*!**********************************!*\
-  !*** ./src/gamefiles/sockets.js ***!
-  \**********************************/
+/***/ "./src/index.js":
+/*!**********************!*\
+  !*** ./src/index.js ***!
+  \**********************/
 /*! no exports provided */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
@@ -9873,23 +9873,47 @@ module.exports = yeast;
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var socket_io_client__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! socket.io-client */ "./node_modules/socket.io-client/lib/index.js");
 /* harmony import */ var socket_io_client__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(socket_io_client__WEBPACK_IMPORTED_MODULE_0__);
+// **** Socket IO imports and functionality ***********
 
- 
+
 const socket = socket_io_client__WEBPACK_IMPORTED_MODULE_0___default()();
 
-socket.on('message', function (data) {
-  console.log(data);
-});
+const move = {
+  up: false,
+  down: false,
+  left: false,
+  right: false
+}
+const FRAME_RATE = 1000 / 60;
 
-/***/ }),
+function keyEvent(e, boolean) {
+  switch (e.keyCode) {
+    case 87: // W
+      move.up = boolean;
+      break;
+    case 83: // S
+      move.down = boolean;
+      break;
+    case 65: // A
+      move.left = boolean;
+      break;
+    case 68: // D
+      move.right = boolean;
+      break;
+  }
+}
 
-/***/ "./src/index.js":
-/*!**********************!*\
-  !*** ./src/index.js ***!
-  \**********************/
-/*! no static exports found */
-/***/ (function(module, exports) {
+document.addEventListener('keydown', (e) => keyEvent(e, true))
+document.addEventListener('keyup', (e) => keyEvent(e, false))
 
+// Client Actions
+socket.emit('new player');
+setInterval(() => {
+  socket.emit('move', move);
+}, FRAME_RATE);
+
+
+// **** Canvas functionality ********************
 const c = document.getElementById('canvas').getContext('2d');
 
 window.addEventListener('resize', resize);
@@ -9899,36 +9923,40 @@ function resize() {
   canvas.height = 720;
 }
 
+// ********** need to update players on connect
+let players = {}
+
 function init() {
 
 }
 
 function loop() {
-  c.fillStyle = 'white';
-  c.fillRect(0, 0, canvas.width, canvas.height);
+// ********** do i stream data?
+
+  c.clearRect(0, 0, canvas.width, canvas.height);
   
+
+//  socket.on('state', (players) => {
+    for (let id in players) {
+      let player = players[id];
+      c.beginPath();
+      c.arc(player.x, player.y, 10, 0, Math.PI * 2);
+      c.fillStyle = "red";
+      c.fill();
+      c.closePath();
+    }
+ // });
+
   window.requestAnimationFrame(loop);
 }
 
 resize();
+init();
 loop();
 
 /***/ }),
 
 /***/ 0:
-/*!*******************************************************!*\
-  !*** multi ./src/index.js ./src/gamefiles/sockets.js ***!
-  \*******************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-__webpack_require__(/*! ./src/index.js */"./src/index.js");
-module.exports = __webpack_require__(/*! ./src/gamefiles/sockets.js */"./src/gamefiles/sockets.js");
-
-
-/***/ }),
-
-/***/ 1:
 /*!********************!*\
   !*** ws (ignored) ***!
   \********************/
