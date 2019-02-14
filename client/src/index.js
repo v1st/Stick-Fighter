@@ -9,6 +9,7 @@ const move = {
   left: false,
   right: false
 }
+
 const FRAME_RATE = 1000 / 60;
 
 function keyEvent(e, boolean) {
@@ -37,45 +38,18 @@ setInterval(() => {
   socket.emit('move', move);
 }, FRAME_RATE);
 
-
 // **** Canvas functionality ********************
-const c = document.getElementById('canvas').getContext('2d');
+import Game from './gamefiles/Game.js';
 
-window.addEventListener('resize', resize);
-
-function resize() {
-  canvas.width = 1080;
-  canvas.height = 720;
-}
-
-// ********** need to update players on connect
-let players = {}
+const canvas = document.getElementById('canvas');
 
 function init() {
-
+  // Create new game enviorment
+  const game = new Game(socket);
+  // Create HTML game canvas
+  game.create(socket, canvas);
+  // Updates and draws content
+  game.run();
 }
 
-function loop() {
-// ********** do i stream data?
-
-  c.clearRect(0, 0, canvas.width, canvas.height);
-  
-
-//  socket.on('state', (players) => {
-    for (let id in players) {
-      let player = players[id];
-      c.beginPath();
-      c.arc(player.x, player.y, 10, 0, Math.PI * 2);
-      c.fillStyle = "red";
-      c.fill();
-      c.closePath();
-    }
- // });
-  socket.on()
-
-  window.requestAnimationFrame(loop);
-}
-
-resize();
 init();
-loop();
