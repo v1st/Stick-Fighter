@@ -24,7 +24,8 @@ export default class Game {
    * Updates the state of the game client side and relays intents to the
    * server.
    */
-  update() {}
+  update() {
+  }
 
   /**
    * Draws the state of the game onto the HTML5 canvas.
