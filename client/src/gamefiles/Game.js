@@ -31,18 +31,10 @@ export default class Game {
    * Draws the state of the game onto the HTML5 canvas.
    */
   draw() {
-    this.ctx.clearRect(0, 0, canvas.width, canvas.height);
     // Draw Bullets 
 
     // Draw Players
-    for (let id in this.players) {
-      let player = players[id];
-      this.ctx.beginPath();
-      this.ctx.arc(player.x, player.y, 10, 0, Math.PI * 2);
-      this.ctx.fillStyle = "red";
-      this.ctx.fill();
-      this.ctx.closePath();
-    }
+   
   }
 
   /**
@@ -51,6 +43,5 @@ export default class Game {
   run() {
     this.update();
     this.draw();
-    window.requestAnimationFrame(this.run.bind(this));
   }
 }
