@@ -5,12 +5,13 @@ const config = {
   type: Phaser.AUTO,
   width: 1080,
   height: 720,
+  pixelArt: true,
   physics: {
-    default: 'arcade',
-    arcade: {
-      gravity: {
-        y: 200
-      }
+    default: 'impact',
+    impact: {
+      debug: true,
+      gravity: 1600,
+      setBounds: true
     }
   },
   scene: {
@@ -26,7 +27,6 @@ let map;
 let tileset;
 let layer;
 let player;
-let gravity = 300;
 let cursors;
 
 function preload() {
@@ -56,16 +56,18 @@ function create() {
   // Add tile image
   tileset = map.addTilesetImage('tiles');
   // Combine tilemap and image
-  layer = map.createStaticLayer(0, tileset,0 ,0);
+  layer = map.createStaticLayer(0, tileset, 0, 0);
   layer.setCollisionBetween(0, 8);
 
   // Create Player model
-  player = this.physics.add.sprite(100, 450, 'dino');
+  player = this.impact.add.sprite(550, 300, 'dino');
+  player.setMaxVelocity(300, 300).setFriction(1600, 500);
+  player.body.accelGround = 300;
+  player.body.accelAir = 300;
+  player.body.jumpSpeed = 1000;
+  player.setActiveCollision();
 
-  player.setBounce(0.2);
-  player.setCollideWorldBounds(true);
-  player.body.setGravityY(gravity)
-
+  // Player animations
   this.anims.create({
     key: 'left',
     frames: this.anims.generateFrameNumbers('dino', {
@@ -98,30 +100,45 @@ function create() {
   // 11  12 kick
   // 12 - 15 hit
   // 17 - 22 crouch;
+
   // Add collision
-  this.physics.add.collider(player, layer);
+  const slopeMap = {
+    0: 2,
+    1: 1,
+    2: 24,
+    3: 1,
+    4: 0,
+    5: 1,
+    6: 1,
+    7: 1,
+    8: 1
+  };
+  this.impact.world.setCollisionMapFromTilemapLayer(layer, {
+    slopeMap
+  });
 
   // Add keyboard listener
   cursors = this.input.keyboard.createCursorKeys();
 }
 
 function update() {
+  let accel = player.body.standing ? player.body.accelGround : player.body.accelAir;
+  // Player movement
   if (cursors.left.isDown) {
-    player.setVelocityX(-160);
+    player.setVelocityX(-accel);
 
+    player.flipX = true;
     player.anims.play('left', true);
-    player.flipX= true;
   } else if (cursors.right.isDown) {
-    player.setVelocityX(160);
+    player.setVelocityX(accel);
 
+    player.flipX = false;
     player.anims.play('right', true);
-    player.flipX= false;
   } else {
-    player.setVelocityX(0);
-
+    player.setAccelerationX(0);
     player.anims.play('idle', true);
   }
-  if (cursors.up.isDown && player.body.touching.down) {
-    player.setVelocityY(-330);
+  if (cursors.up.isDown && player.body.standing) {
+    player.setVelocityY(-800);
   }
 }
