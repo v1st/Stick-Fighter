@@ -34,6 +34,8 @@ let tileset;
 let layer;
 let player;
 let cursors;
+let kick;
+let crouch;
 let connectedPlayers = {};
 
 function preload() {
@@ -68,10 +70,13 @@ function create() {
 
   // Create Player model
   player = this.impact.add.sprite(550, 300, 'dino');
-  player.setMaxVelocity(300, 300).setFriction(1600, 500);
   player.body.accelGround = 300;
   player.body.accelAir = 300;
   player.body.jumpSpeed = 1000;
+  player.setMaxVelocity(300, 300);
+  player.setFriction(1600, 500);
+  player.setBodyScale(2, 2);
+  player.setOffset(8, 6, 32, 32);
   player.setActiveCollision();
 
   // Player animations
@@ -81,7 +86,7 @@ function create() {
       start: 4,
       end: 9,
     }),
-    frameRate: 10,
+    frameRate: 5,
     repeat: -1,
   });
 
@@ -91,7 +96,7 @@ function create() {
       start: 0,
       end: 3
     }),
-    frameRate: 10
+    frameRate: 5
   });
 
   this.anims.create({
@@ -100,7 +105,37 @@ function create() {
       start: 4,
       end: 9
     }),
-    frameRate: 10,
+    frameRate: 5,
+    repeat: -1
+  });
+
+  this.anims.create({
+    key: 'kick',
+    frames: this.anims.generateFrameNumbers('dino', {
+      start: 11,
+      end: 12
+    }),
+    frameRate: 5,
+    repeat: 2
+  });
+
+  this.anims.create({
+    key: 'crouch',
+    frames: this.anims.generateFrameNumbers('dino', {
+      start: 17,
+      end: 22
+    }),
+    frameRate: 5,
+    repeat: -1
+  });
+
+  this.anims.create({
+    key: 'damaged',
+    frames: this.anims.generateFrameNumbers('dino', {
+      start: 12,
+      end: 15
+    }),
+    frameRate: 5,
     repeat: -1
   });
 
@@ -130,12 +165,17 @@ function create() {
 
   // Add keyboard listener
   cursors = this.input.keyboard.createCursorKeys();
+  kick = this.input.keyboard.addKey('Z'); // Kick key
+  crouch = this.input.keyboard.addKey('C'); // Crouch key
+  //hit = this.input.keyboard.addKey('X'); // Damaged 
 }
 
 function update() {
   let accel = player.body.standing ? player.body.accelGround : player.body.accelAir;
   // Player movement
-  if (cursors.left.isDown) {
+  if (cursors.up.isDown && player.body.standing) {
+    player.setVelocityY(-800);
+  } else if (cursors.left.isDown) {
     player.setVelocityX(-accel);
 
     player.flipX = true;
@@ -145,12 +185,14 @@ function update() {
 
     player.flipX = false;
     player.anims.play('right', true);
+
+  } else if (kick.isDown) {
+    player.anims.play('kick', false)
+  } else if (crouch.isDown) {
+    player.anims.play('crouch', true)
   } else {
     player.setAccelerationX(0);
     player.anims.play('idle', true);
-  }
-  if (cursors.up.isDown && player.body.standing) {
-    player.setVelocityY(-800);
   }
 }
 
