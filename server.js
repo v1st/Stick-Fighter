@@ -29,28 +29,29 @@ io.on('connection', (socket) => {
   console.log('new user connected')
   socket.on('new player', () => {
     players[socket.id] = {
-      x: 300,
+      x: 550,
       y: 300
     }
   });
 
-  socket.on('move', (data) => {
-    let player = players[socket.id] || {};
-    switch (true) {
-      case data.up: // W
-        player.y -= 5;
-        break;
-      case data.down: // S
-        player.y += 5;
-        break;
-      case data.left: // A
-        player.x -= 5;
-        break;
-      case data.right: // D
-        player.x += 5;
-        break;
-    }
-  })
+  // socket.on('move', (data) => {
+  //   let player = players[socket.id] || {};
+  //   switch (true) {
+  //     case data.up: // W
+  //       player.y -= 5;
+  //       break;
+  //     case data.down: // S
+  //       player.y += 5;
+  //       break;
+  //     case data.left: // A
+  //       player.x -= 5;
+  //       break;
+  //     case data.right: // D
+  //       player.x += 5;
+  //       break;
+  //   }
+  // })
+
   // Disconnected player
   socket.on('disconnect', () => {
     // Remove disconnected player

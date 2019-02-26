@@ -1,4 +1,10 @@
 import Phaser from 'phaser';
+import io from 'socket.io-client';
+import Client from './Client';
+
+const socket = io();
+
+const client = new Client(socket);
 
 // Phaser config settings
 const config = {
@@ -28,6 +34,7 @@ let tileset;
 let layer;
 let player;
 let cursors;
+let connectedPlayers = {};
 
 function preload() {
   // Preload game assets
@@ -117,6 +124,10 @@ function create() {
     slopeMap
   });
 
+  // Add players
+  // client.askNewPlayer();
+  // console.log(client)
+
   // Add keyboard listener
   cursors = this.input.keyboard.createCursorKeys();
 }
@@ -142,3 +153,5 @@ function update() {
     player.setVelocityY(-800);
   }
 }
+
+// Game functions
