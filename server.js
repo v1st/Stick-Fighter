@@ -8,7 +8,7 @@ const server = http.Server(app);
 const io = socketIO(server);
 
 const port = process.env.PORT || 3000;
-var FRAME_RATE = 1000.0 / 60.0;
+var FRAME_RATE = 1000.0 / 0.5;
 
 app.set('port', port);
 
@@ -27,12 +27,11 @@ let players = {};
 
 io.on('connection', (socket) => {
   console.log('new user connected')
-  socket.on('new player', () => {
-    players[socket.id] = {
-      x: 550,
-      y: 300
-    }
-  });
+  players[socket.id] = {
+    playerId: socket.id,
+    x: 550,
+    y: 300,
+  }
 
   // socket.on('move', (data) => {
   //   let player = players[socket.id] || {};
@@ -52,6 +51,12 @@ io.on('connection', (socket) => {
   //   }
   // })
 
+  // Send current list of players to the new client
+  socket.emit('currentPlayers', players);
+
+  // Send new player to connected clients
+  socket.broadcast.emit('newPlayerJoined', players[socket.id]);
+
   // Disconnected player
   socket.on('disconnect', () => {
     // Remove disconnected player
@@ -61,8 +66,8 @@ io.on('connection', (socket) => {
 });
 
 setInterval(() => {
-  // needs to update game and players state
-  io.sockets.emit('state', players);
+  // Send player packets to every client, 60 times a second
+  io.sockets.emit('player packets', players);
 }, FRAME_RATE);
 
 // Start server

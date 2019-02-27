@@ -2,9 +2,7 @@ import Phaser from 'phaser';
 import io from 'socket.io-client';
 import Client from './Client';
 
-const socket = io();
-
-const client = new Client(socket);
+//const client = new Client(socket);
 
 // Phaser config settings
 const config = {
@@ -68,80 +66,76 @@ function create() {
   layer = map.createStaticLayer(0, tileset, 0, 0);
   layer.setCollisionBetween(0, 8);
 
-  // Create Player model
-  player = this.impact.add.sprite(550, 300, 'dino');
-  player.body.accelGround = 300;
-  player.body.accelAir = 300;
-  player.body.jumpSpeed = 1000;
-  player.setMaxVelocity(300, 300);
-  player.setFriction(1600, 500);
-  player.setBodyScale(2, 2);
-  player.setOffset(8, 6, 32, 32);
-  player.setActiveCollision();
+  // // Create Player model
+  // player = this.impact.add.sprite(550, 300, 'dino');
+  // player.body.accelGround = 300;
+  // player.body.accelAir = 300;
+  // player.body.jumpSpeed = 1000;
+  // player.setMaxVelocity(300, 300);
+  // player.setFriction(1600, 500);
+  // player.setBodyScale(2, 2);
+  // player.setOffset(8, 6, 32, 32);
+  // player.setActiveCollision();
 
-  // Player animations
-  this.anims.create({
-    key: 'left',
-    frames: this.anims.generateFrameNumbers('dino', {
-      start: 4,
-      end: 9,
-    }),
-    frameRate: 5,
-    repeat: -1,
-  });
+  // // Player animations
+  // this.anims.create({
+  //   key: 'left',
+  //   frames: this.anims.generateFrameNumbers('dino', {
+  //     start: 4,
+  //     end: 9,
+  //   }),
+  //   frameRate: 5,
+  //   repeat: -1,
+  // });
 
-  this.anims.create({
-    key: 'idle',
-    frames: this.anims.generateFrameNumbers('dino', {
-      start: 0,
-      end: 3
-    }),
-    frameRate: 5
-  });
+  // this.anims.create({
+  //   key: 'idle',
+  //   frames: this.anims.generateFrameNumbers('dino', {
+  //     start: 0,
+  //     end: 3
+  //   }),
+  //   frameRate: 5
+  // });
 
-  this.anims.create({
-    key: 'right',
-    frames: this.anims.generateFrameNumbers('dino', {
-      start: 4,
-      end: 9
-    }),
-    frameRate: 5,
-    repeat: -1
-  });
+  // this.anims.create({
+  //   key: 'right',
+  //   frames: this.anims.generateFrameNumbers('dino', {
+  //     start: 4,
+  //     end: 9
+  //   }),
+  //   frameRate: 5,
+  //   repeat: -1
+  // });
 
-  this.anims.create({
-    key: 'kick',
-    frames: this.anims.generateFrameNumbers('dino', {
-      start: 11,
-      end: 12
-    }),
-    frameRate: 5,
-    repeat: 2
-  });
+  // this.anims.create({
+  //   key: 'kick',
+  //   frames: this.anims.generateFrameNumbers('dino', {
+  //     start: 11,
+  //     end: 12
+  //   }),
+  //   frameRate: 5,
+  //   repeat: 2
+  // });
 
-  this.anims.create({
-    key: 'crouch',
-    frames: this.anims.generateFrameNumbers('dino', {
-      start: 17,
-      end: 22
-    }),
-    frameRate: 5,
-    repeat: -1
-  });
+  // this.anims.create({
+  //   key: 'crouch',
+  //   frames: this.anims.generateFrameNumbers('dino', {
+  //     start: 17,
+  //     end: 22
+  //   }),
+  //   frameRate: 5,
+  //   repeat: -1
+  // });
 
-  this.anims.create({
-    key: 'damaged',
-    frames: this.anims.generateFrameNumbers('dino', {
-      start: 12,
-      end: 15
-    }),
-    frameRate: 5,
-    repeat: -1
-  });
-
-  // 11  12 kick
-  // 12 - 15 hit
-  // 17 - 22 crouch;
+  // this.anims.create({
+  //   key: 'damaged',
+  //   frames: this.anims.generateFrameNumbers('dino', {
+  //     start: 12,
+  //     end: 15
+  //   }),
+  //   frameRate: 5,
+  //   repeat: -1
+  // });
 
   // Add collision
   const slopeMap = {
@@ -168,32 +162,138 @@ function create() {
   kick = this.input.keyboard.addKey('Z'); // Kick key
   crouch = this.input.keyboard.addKey('C'); // Crouch key
   //hit = this.input.keyboard.addKey('X'); // Damaged 
+
+
+  // ************* Socket testing *********************
+  this.socket = io();
+  console.log(this)
+  this.otherPlayers = this.add.group();
+
+  // Pull current players connected to server
+  this.socket.on('currentPlayers', (players) => {
+    console.log(players)
+    Object.keys(players).forEach((id) => {
+      if (players[id].playerId === this.socket.id) {
+        addPlayer(this, players[id]);
+      }
+    });
+  });
+
+  // Retrieve data from players that join the game
+  this.socket.on('newPlayerJoined', (playerInfo) => {
+    addOtherPlayers(this, playerInfo);
+  });
+
+  // Remove a players data on disconnection
+  this.socket.on('disconnect', (playerId) => {
+    this.otherPlayers.getChildren().forEach((otherPlayer) => {
+      if (playerId === otherPlayer.playerId) {
+        otherPlayer.destroy();
+      }
+    });
+  });
 }
 
 function update() {
-  let accel = player.body.standing ? player.body.accelGround : player.body.accelAir;
-  // Player movement
-  if (cursors.up.isDown && player.body.standing) {
-    player.setVelocityY(-800);
-  } else if (cursors.left.isDown) {
-    player.setVelocityX(-accel);
+  // let accel = player.body.standing ? player.body.accelGround : player.body.accelAir;
+  // // Player movement
+  // if (cursors.up.isDown && player.body.standing) {
+  //   player.setVelocityY(-800);
+  // } else if (cursors.left.isDown) {
+  //   player.setVelocityX(-accel);
 
-    player.flipX = true;
-    player.anims.play('left', true);
-  } else if (cursors.right.isDown) {
-    player.setVelocityX(accel);
+  //   player.flipX = true;
+  //   player.anims.play('left', true);
+  // } else if (cursors.right.isDown) {
+  //   player.setVelocityX(accel);
 
-    player.flipX = false;
-    player.anims.play('right', true);
+  //   player.flipX = false;
+  //   player.anims.play('right', true);
 
-  } else if (kick.isDown) {
-    player.anims.play('kick', false)
-  } else if (crouch.isDown) {
-    player.anims.play('crouch', true)
-  } else {
-    player.setAccelerationX(0);
-    player.anims.play('idle', true);
-  }
+  // } else if (kick.isDown) {
+  //   player.anims.play('kick', false)
+  // } else if (crouch.isDown) {
+  //   player.anims.play('crouch', true)
+  // } else {
+  //   player.setAccelerationX(0);
+  //   player.anims.play('idle', true);
+  // }
 }
 
 // Game functions
+function addPlayer(self, playerInfo) {
+  // Create Player model
+  self.player = self.impact.add.sprite(playerInfo.x, playerInfo.y, 'dino');
+  self.player.body.accelGround = 300;
+  self.player.body.accelAir = 300;
+  self.player.body.jumpSpeed = 1000;
+  self.player.setMaxVelocity(300, 300);
+  self.player.setFriction(1600, 500);
+  self.player.setBodyScale(2, 2);
+  self.player.setOffset(8, 6, 32, 32);
+  self.player.setActiveCollision();
+
+  // Player animations
+  self.anims.create({
+    key: 'left',
+    frames: self.anims.generateFrameNumbers('dino', {
+      start: 4,
+      end: 9,
+    }),
+    frameRate: 5,
+    repeat: -1,
+  });
+
+  self.anims.create({
+    key: 'idle',
+    frames: self.anims.generateFrameNumbers('dino', {
+      start: 0,
+      end: 3
+    }),
+    frameRate: 5
+  });
+
+  self.anims.create({
+    key: 'right',
+    frames: self.anims.generateFrameNumbers('dino', {
+      start: 4,
+      end: 9
+    }),
+    frameRate: 5,
+    repeat: -1
+  });
+
+  self.anims.create({
+    key: 'kick',
+    frames: self.anims.generateFrameNumbers('dino', {
+      start: 11,
+      end: 12
+    }),
+    frameRate: 5,
+    repeat: 2
+  });
+
+  self.anims.create({
+    key: 'crouch',
+    frames: self.anims.generateFrameNumbers('dino', {
+      start: 17,
+      end: 22
+    }),
+    frameRate: 5,
+    repeat: -1
+  });
+
+  self.anims.create({
+    key: 'damaged',
+    frames: self.anims.generateFrameNumbers('dino', {
+      start: 12,
+      end: 15
+    }),
+    frameRate: 5,
+    repeat: -1
+  });
+}
+
+function addOtherPlayers() {
+
+}

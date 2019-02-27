@@ -9,13 +9,13 @@ export default class Client {
   }
 
   addNewPlayer() {
-    let player = new Player();
+    let player = 
 
-    socket.emit('newplayer', player);
+    this.socket.emit('new player', playerData);
   }
 
   askNewPlayer() {
-    this.socket.emit('newplayer');
+    this.socket.emit('new player');
   }
 
   removePlayer() {
