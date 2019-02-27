@@ -66,77 +66,6 @@ function create() {
   layer = map.createStaticLayer(0, tileset, 0, 0);
   layer.setCollisionBetween(0, 8);
 
-  // // Create Player model
-  // player = this.impact.add.sprite(550, 300, 'dino');
-  // player.body.accelGround = 300;
-  // player.body.accelAir = 300;
-  // player.body.jumpSpeed = 1000;
-  // player.setMaxVelocity(300, 300);
-  // player.setFriction(1600, 500);
-  // player.setBodyScale(2, 2);
-  // player.setOffset(8, 6, 32, 32);
-  // player.setActiveCollision();
-
-  // // Player animations
-  // this.anims.create({
-  //   key: 'left',
-  //   frames: this.anims.generateFrameNumbers('dino', {
-  //     start: 4,
-  //     end: 9,
-  //   }),
-  //   frameRate: 5,
-  //   repeat: -1,
-  // });
-
-  // this.anims.create({
-  //   key: 'idle',
-  //   frames: this.anims.generateFrameNumbers('dino', {
-  //     start: 0,
-  //     end: 3
-  //   }),
-  //   frameRate: 5
-  // });
-
-  // this.anims.create({
-  //   key: 'right',
-  //   frames: this.anims.generateFrameNumbers('dino', {
-  //     start: 4,
-  //     end: 9
-  //   }),
-  //   frameRate: 5,
-  //   repeat: -1
-  // });
-
-  // this.anims.create({
-  //   key: 'kick',
-  //   frames: this.anims.generateFrameNumbers('dino', {
-  //     start: 11,
-  //     end: 12
-  //   }),
-  //   frameRate: 5,
-  //   repeat: 2
-  // });
-
-  // this.anims.create({
-  //   key: 'crouch',
-  //   frames: this.anims.generateFrameNumbers('dino', {
-  //     start: 17,
-  //     end: 22
-  //   }),
-  //   frameRate: 5,
-  //   repeat: -1
-  // });
-
-  // this.anims.create({
-  //   key: 'damaged',
-  //   frames: this.anims.generateFrameNumbers('dino', {
-  //     start: 12,
-  //     end: 15
-  //   }),
-  //   frameRate: 5,
-  //   repeat: -1
-  // });
-
   // Add collision
   const slopeMap = {
     0: 2,
@@ -153,17 +82,13 @@ function create() {
     slopeMap
   });
 
-  // Add players
-  // client.askNewPlayer();
-  // console.log(client)
-
   // Add keyboard listener
   cursors = this.input.keyboard.createCursorKeys();
   kick = this.input.keyboard.addKey('Z'); // Kick key
   crouch = this.input.keyboard.addKey('C'); // Crouch key
   //hit = this.input.keyboard.addKey('X'); // Damaged 
 
-
+  
   // ************* Socket testing *********************
   this.socket = io();
   console.log(this)
@@ -294,6 +219,12 @@ function addPlayer(self, playerInfo) {
   });
 }
 
-function addOtherPlayers() {
-
+function addOtherPlayers(self, playerInfo) {
+  const otherPlayer = self.impact.add.sprite(playerInfo.x, playerInfo.y, 'dino');
+  otherPlayer.playerId = playerInfo.playerId;
+  otherPlayer.setBodyScale(2, 2);
+  otherPlayer.setOffset(8, 6, 32, 32);
+  otherPlayer.setActiveCollision();
+  
+  self.otherPlayers.add(otherPlayer);
 }
