@@ -31,6 +31,7 @@ io.on('connection', (socket) => {
     playerId: socket.id,
     x: 550,
     y: 300,
+    keyCodes: undefined,
   }
 
   // Send current list of players to the new client
@@ -43,6 +44,7 @@ io.on('connection', (socket) => {
   socket.on('playerPacket', (packet) => {
     players[socket.id].x = packet.x;
     players[socket.id].y = packet.y;
+    players[socket.id].keyCodes = packet.keyCodes;
     socket.broadcast.emit('updatedPackets', players[socket.id])
   })
 

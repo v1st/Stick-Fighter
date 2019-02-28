@@ -1,8 +1,5 @@
 import Phaser from 'phaser';
 import io from 'socket.io-client';
-import Client from './Client';
-
-//const client = new Client(socket);
 
 // Phaser config settings
 const config = {
@@ -26,11 +23,6 @@ const config = {
 }
 
 export const game = new Phaser.Game(config);
-
-let map;
-let tileset;
-let layer;
-let connectedPlayers = {};
 
 function preload() {
   // Preload game assets
@@ -67,15 +59,15 @@ function create() {
     tileHeight: 32
   }
   // Add tilemap
-  map = this.make.tilemap(config);
+  this.map = this.make.tilemap(config);
   // Add tile image
-  tileset = map.addTilesetImage('tiles');
+  this.tileset = this.map.addTilesetImage('tiles');
   // Combine tilemap and image
-  layer = map.createStaticLayer(0, tileset, 0, 0);
-  layer.setCollisionBetween(0, 8);
+  this.layer = this.map.createStaticLayer(0, this.tileset, 0, 0);
+  this.layer.setCollisionBetween(0, 8);
 
   // Add map collision
-  const slopeMap = {
+  this.slopeMap = {
     0: 2,
     1: 1,
     2: 24,
@@ -86,46 +78,71 @@ function create() {
     7: 1,
     8: 1
   };
-  this.impact.world.setCollisionMapFromTilemapLayer(layer, {
-    slopeMap
+
+  this.impact.world.setCollisionMapFromTilemapLayer(this.layer, {
+    slopeMap: this.slopeMap
   });
+
+  // Load player animations
+  preloadAnimation(this, 'blue', 'blueDino');
+  preloadAnimation(this, 'red', 'redDino');
+  preloadAnimation(this, 'green', 'greenDino');
+  preloadAnimation(this, 'yellow', 'yellowDino');
 
   // ************* Socket testing *********************
   this.socket = io();
-  this.otherPlayers = this.add.group();
-
+  this.enemies = [];
   // Pull current players connected to server
   this.socket.on('currentPlayers', (players) => {
     console.log(players)
     Object.keys(players).forEach((id) => {
       if (players[id].playerId === this.socket.id) {
         addPlayer(this, players[id]);
-        console.log(this.player)
       } else {
-        addOtherPlayers(this, players[id]);
+        addOtherPlayers(this, players[id], 'redDino');
       }
     });
   });
 
   // Retrieve data from players that join the game
   this.socket.on('newPlayerJoined', (playerInfo) => {
-    addOtherPlayers(this, playerInfo);
+    addOtherPlayers(this, playerInfo, 'greenDino');
   });
 
   // Retrieve packet data from player movement
   this.socket.on('updatedPackets', (playerInfo) => {
-    this.otherPlayers.getChildren().forEach((otherPlayer) => {
-      if (playerInfo.playerId === otherPlayer.playerId) {
-        otherPlayer.body.reset(playerInfo.x, playerInfo.y);
+    this.enemies.forEach((enemy) => {
+      if (playerInfo.playerId === enemy.playerId) {
+        enemy.body.reset(playerInfo.x, playerInfo.y);
+        let {
+          left,
+          right,
+          kick,
+          crouch
+        } = playerInfo.keyCodes;
+        console.log(playerInfo.keyCodes)
+        if (left.isDown) {
+          enemy.flipX = true;
+          enemy.anims.play('red left', true);
+        } else if (right.isDown) {
+          enemy.flipX = false;
+          enemy.anims.play('red right', true);
+        } else if (kick.isDown) {
+          enemy.anims.play('red kick', true);
+        } else if (crouch.isDown) {
+          enemy.anims.play('red crouch', true);
+        } else {
+          enemy.anims.play('red idle', true);
+        }
       }
     })
   })
 
   // Remove a players data on disconnection
   this.socket.on('disconnect', (playerId) => {
-    this.otherPlayers.getChildren().forEach((otherPlayer) => {
-      if (playerId === otherPlayer.playerId) {
-        otherPlayer.destroy();
+    this.enemies.forEach((enemy) => {
+      if (playerId === enemy.playerId) {
+        enemy.destroy();
       }
     });
   });
@@ -148,32 +165,37 @@ function update() {
       this.player.setVelocityY(-800);
     } else if (this.cursors.left.isDown) {
       this.player.setVelocityX(-accel);
-
       this.player.flipX = true;
-      this.player.anims.play('left', true);
+      this.player.anims.play('blue left', true);
     } else if (this.cursors.right.isDown) {
       this.player.setVelocityX(accel);
-
       this.player.flipX = false;
-      this.player.anims.play('right', true);
-
+      this.player.anims.play('blue right', true);
     } else if (this.kick.isDown) {
-      this.player.anims.play('kick', false)
+      this.player.anims.play('blue kick', false)
     } else if (this.crouch.isDown) {
-      this.player.anims.play('crouch', true)
+      this.player.anims.play('blue crouch', true)
     } else {
       this.player.setAccelerationX(0);
-      this.player.anims.play('idle', true);
+      this.player.anims.play('blue idle', true);
     }
     // Emit player movement to server
     let x = this.player.x;
     let y = this.player.y;
     this.socket.emit('playerPacket', {
       x,
-      y
+      y,
+      keyCodes: {
+        ...this.cursors,
+        kick: this.kick,
+        crouch: this.crouch
+      }
     })
   }
 
+  this.enemies.forEach((enemy) => {
+
+  });
 }
 
 // Game functions
@@ -188,11 +210,28 @@ function addPlayer(self, playerInfo) {
   self.player.setBodyScale(2, 2);
   self.player.setOffset(8, 6, 32, 32);
   self.player.setActiveCollision();
+}
 
+function addOtherPlayers(self, playerInfo, spriteSheet) {
+  const otherPlayer = self.impact.add.sprite(playerInfo.x, playerInfo.y, spriteSheet);
+  otherPlayer.playerId = playerInfo.playerId;
+  otherPlayer.body.accelGround = 300;
+  otherPlayer.body.accelAir = 300;
+  otherPlayer.body.jumpSpeed = 1000;
+  otherPlayer.setMaxVelocity(300, 300);
+  otherPlayer.setFriction(1600, 500);
+  otherPlayer.setBodyScale(2, 2);
+  otherPlayer.setOffset(8, 6, 32, 32);
+  otherPlayer.setActiveCollision();
+
+  self.enemies.push(otherPlayer);
+}
+
+function preloadAnimation(self, color, spriteSheet) {
   // Player animations
   self.anims.create({
-    key: 'left',
-    frames: self.anims.generateFrameNumbers('blueDino', {
+    key: `${color} left`,
+    frames: self.anims.generateFrameNumbers(spriteSheet, {
       start: 4,
       end: 9,
     }),
@@ -201,8 +240,8 @@ function addPlayer(self, playerInfo) {
   });
 
   self.anims.create({
-    key: 'idle',
-    frames: self.anims.generateFrameNumbers('blueDino', {
+    key: `${color} idle`,
+    frames: self.anims.generateFrameNumbers(spriteSheet, {
       start: 0,
       end: 3
     }),
@@ -210,8 +249,8 @@ function addPlayer(self, playerInfo) {
   });
 
   self.anims.create({
-    key: 'right',
-    frames: self.anims.generateFrameNumbers('blueDino', {
+    key: `${color} right`,
+    frames: self.anims.generateFrameNumbers(spriteSheet, {
       start: 4,
       end: 9
     }),
@@ -220,8 +259,8 @@ function addPlayer(self, playerInfo) {
   });
 
   self.anims.create({
-    key: 'kick',
-    frames: self.anims.generateFrameNumbers('blueDino', {
+    key: `${color} kick`,
+    frames: self.anims.generateFrameNumbers(spriteSheet, {
       start: 11,
       end: 12
     }),
@@ -230,8 +269,8 @@ function addPlayer(self, playerInfo) {
   });
 
   self.anims.create({
-    key: 'crouch',
-    frames: self.anims.generateFrameNumbers('blueDino', {
+    key: `${color} crouch`,
+    frames: self.anims.generateFrameNumbers(spriteSheet, {
       start: 17,
       end: 22
     }),
@@ -240,22 +279,12 @@ function addPlayer(self, playerInfo) {
   });
 
   self.anims.create({
-    key: 'damaged',
-    frames: self.anims.generateFrameNumbers('blueDino', {
+    key: `${color} damaged`,
+    frames: self.anims.generateFrameNumbers(spriteSheet, {
       start: 12,
       end: 15
     }),
     frameRate: 5,
     repeat: -1
   });
-}
-
-function addOtherPlayers(self, playerInfo) {
-  const otherPlayer = self.impact.add.sprite(playerInfo.x, playerInfo.y, 'redDino');
-  otherPlayer.playerId = playerInfo.playerId;
-  otherPlayer.setBodyScale(2, 2);
-  otherPlayer.setOffset(8, 6, 32, 32);
-  otherPlayer.setActiveCollision();
-
-  self.otherPlayers.add(otherPlayer);
 }
