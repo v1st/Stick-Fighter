@@ -30,20 +30,28 @@ export const game = new Phaser.Game(config);
 let map;
 let tileset;
 let layer;
-let player;
-let cursors;
-let kick;
-let crouch;
 let connectedPlayers = {};
 
 function preload() {
   // Preload game assets
   this.load.image('background', 'client/src/assets/Background/Background.png');
   // Load Tile map csv and image
-  this.load.tilemapCSV('tileSheet', 'client/src/assets/Tiles/Dino.csv');
+  this.load.tilemapCSV('tileSheet', 'client/src/assets/Tiles/dino.csv');
   this.load.image('tiles', 'client/src/assets/Tiles/TileMap.png');
   // Load Player sprite
-  this.load.spritesheet('dino', 'client/src/assets/Character/png/DinoSpritesBlue.png', {
+  this.load.spritesheet('blueDino', 'client/src/assets/Character/png/DinoSpritesBlue.png', {
+    frameWidth: 24,
+    frameHeight: 24
+  });
+  this.load.spritesheet('redDino', 'client/src/assets/Character/png/DinoSpritesRed.png', {
+    frameWidth: 24,
+    frameHeight: 24
+  });
+  this.load.spritesheet('greenDino', 'client/src/assets/Character/png/DinoSpritesGreen.png', {
+    frameWidth: 24,
+    frameHeight: 24
+  });
+  this.load.spritesheet('yellowDino', 'client/src/assets/Character/png/DinoSpritesYellow.png', {
     frameWidth: 24,
     frameHeight: 24
   });
@@ -66,7 +74,7 @@ function create() {
   layer = map.createStaticLayer(0, tileset, 0, 0);
   layer.setCollisionBetween(0, 8);
 
-  // Add collision
+  // Add map collision
   const slopeMap = {
     0: 2,
     1: 1,
@@ -82,16 +90,8 @@ function create() {
     slopeMap
   });
 
-  // Add keyboard listener
-  cursors = this.input.keyboard.createCursorKeys();
-  kick = this.input.keyboard.addKey('Z'); // Kick key
-  crouch = this.input.keyboard.addKey('C'); // Crouch key
-  //hit = this.input.keyboard.addKey('X'); // Damaged 
-
-  
   // ************* Socket testing *********************
   this.socket = io();
-  console.log(this)
   this.otherPlayers = this.add.group();
 
   // Pull current players connected to server
@@ -100,6 +100,9 @@ function create() {
     Object.keys(players).forEach((id) => {
       if (players[id].playerId === this.socket.id) {
         addPlayer(this, players[id]);
+        console.log(this.player)
+      } else {
+        addOtherPlayers(this, players[id]);
       }
     });
   });
@@ -109,6 +112,15 @@ function create() {
     addOtherPlayers(this, playerInfo);
   });
 
+  // Retrieve packet data from player movement
+  this.socket.on('updatedPackets', (playerInfo) => {
+    this.otherPlayers.getChildren().forEach((otherPlayer) => {
+      if (playerInfo.playerId === otherPlayer.playerId) {
+        otherPlayer.body.reset(playerInfo.x, playerInfo.y);
+      }
+    })
+  })
+
   // Remove a players data on disconnection
   this.socket.on('disconnect', (playerId) => {
     this.otherPlayers.getChildren().forEach((otherPlayer) => {
@@ -117,38 +129,57 @@ function create() {
       }
     });
   });
+
+  // ************* Socket testing *********************
+
+  // Add keyboard listener
+  this.cursors = this.input.keyboard.createCursorKeys();
+  this.kick = this.input.keyboard.addKey('Z'); // Kick key
+  this.crouch = this.input.keyboard.addKey('C'); // Crouch key
+  //hit = this.input.keyboard.addKey('X'); // Damaged 
 }
 
 function update() {
-  // let accel = player.body.standing ? player.body.accelGround : player.body.accelAir;
-  // // Player movement
-  // if (cursors.up.isDown && player.body.standing) {
-  //   player.setVelocityY(-800);
-  // } else if (cursors.left.isDown) {
-  //   player.setVelocityX(-accel);
+  // Player movement
+  if (this.player) {
+    let accel = this.player.body.standing ? this.player.body.accelGround : this.player.body.accelAir;
 
-  //   player.flipX = true;
-  //   player.anims.play('left', true);
-  // } else if (cursors.right.isDown) {
-  //   player.setVelocityX(accel);
+    if (this.cursors.up.isDown && this.player.body.standing) {
+      this.player.setVelocityY(-800);
+    } else if (this.cursors.left.isDown) {
+      this.player.setVelocityX(-accel);
 
-  //   player.flipX = false;
-  //   player.anims.play('right', true);
+      this.player.flipX = true;
+      this.player.anims.play('left', true);
+    } else if (this.cursors.right.isDown) {
+      this.player.setVelocityX(accel);
 
-  // } else if (kick.isDown) {
-  //   player.anims.play('kick', false)
-  // } else if (crouch.isDown) {
-  //   player.anims.play('crouch', true)
-  // } else {
-  //   player.setAccelerationX(0);
-  //   player.anims.play('idle', true);
-  // }
+      this.player.flipX = false;
+      this.player.anims.play('right', true);
+
+    } else if (this.kick.isDown) {
+      this.player.anims.play('kick', false)
+    } else if (this.crouch.isDown) {
+      this.player.anims.play('crouch', true)
+    } else {
+      this.player.setAccelerationX(0);
+      this.player.anims.play('idle', true);
+    }
+    // Emit player movement to server
+    let x = this.player.x;
+    let y = this.player.y;
+    this.socket.emit('playerPacket', {
+      x,
+      y
+    })
+  }
+
 }
 
 // Game functions
 function addPlayer(self, playerInfo) {
   // Create Player model
-  self.player = self.impact.add.sprite(playerInfo.x, playerInfo.y, 'dino');
+  self.player = self.impact.add.sprite(playerInfo.x, playerInfo.y, 'blueDino');
   self.player.body.accelGround = 300;
   self.player.body.accelAir = 300;
   self.player.body.jumpSpeed = 1000;
@@ -161,7 +192,7 @@ function addPlayer(self, playerInfo) {
   // Player animations
   self.anims.create({
     key: 'left',
-    frames: self.anims.generateFrameNumbers('dino', {
+    frames: self.anims.generateFrameNumbers('blueDino', {
       start: 4,
       end: 9,
     }),
@@ -171,7 +202,7 @@ function addPlayer(self, playerInfo) {
 
   self.anims.create({
     key: 'idle',
-    frames: self.anims.generateFrameNumbers('dino', {
+    frames: self.anims.generateFrameNumbers('blueDino', {
       start: 0,
       end: 3
     }),
@@ -180,7 +211,7 @@ function addPlayer(self, playerInfo) {
 
   self.anims.create({
     key: 'right',
-    frames: self.anims.generateFrameNumbers('dino', {
+    frames: self.anims.generateFrameNumbers('blueDino', {
       start: 4,
       end: 9
     }),
@@ -190,7 +221,7 @@ function addPlayer(self, playerInfo) {
 
   self.anims.create({
     key: 'kick',
-    frames: self.anims.generateFrameNumbers('dino', {
+    frames: self.anims.generateFrameNumbers('blueDino', {
       start: 11,
       end: 12
     }),
@@ -200,7 +231,7 @@ function addPlayer(self, playerInfo) {
 
   self.anims.create({
     key: 'crouch',
-    frames: self.anims.generateFrameNumbers('dino', {
+    frames: self.anims.generateFrameNumbers('blueDino', {
       start: 17,
       end: 22
     }),
@@ -210,7 +241,7 @@ function addPlayer(self, playerInfo) {
 
   self.anims.create({
     key: 'damaged',
-    frames: self.anims.generateFrameNumbers('dino', {
+    frames: self.anims.generateFrameNumbers('blueDino', {
       start: 12,
       end: 15
     }),
@@ -220,11 +251,11 @@ function addPlayer(self, playerInfo) {
 }
 
 function addOtherPlayers(self, playerInfo) {
-  const otherPlayer = self.impact.add.sprite(playerInfo.x, playerInfo.y, 'dino');
+  const otherPlayer = self.impact.add.sprite(playerInfo.x, playerInfo.y, 'redDino');
   otherPlayer.playerId = playerInfo.playerId;
   otherPlayer.setBodyScale(2, 2);
   otherPlayer.setOffset(8, 6, 32, 32);
   otherPlayer.setActiveCollision();
-  
+
   self.otherPlayers.add(otherPlayer);
 }

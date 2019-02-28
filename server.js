@@ -33,29 +33,18 @@ io.on('connection', (socket) => {
     y: 300,
   }
 
-  // socket.on('move', (data) => {
-  //   let player = players[socket.id] || {};
-  //   switch (true) {
-  //     case data.up: // W
-  //       player.y -= 5;
-  //       break;
-  //     case data.down: // S
-  //       player.y += 5;
-  //       break;
-  //     case data.left: // A
-  //       player.x -= 5;
-  //       break;
-  //     case data.right: // D
-  //       player.x += 5;
-  //       break;
-  //   }
-  // })
-
   // Send current list of players to the new client
   socket.emit('currentPlayers', players);
 
   // Send new player to connected clients
   socket.broadcast.emit('newPlayerJoined', players[socket.id]);
+
+  // Update server with player packets
+  socket.on('playerPacket', (packet) => {
+    players[socket.id].x = packet.x;
+    players[socket.id].y = packet.y;
+    socket.broadcast.emit('updatedPackets', players[socket.id])
+  })
 
   // Disconnected player
   socket.on('disconnect', () => {
@@ -67,7 +56,7 @@ io.on('connection', (socket) => {
 
 setInterval(() => {
   // Send player packets to every client, 60 times a second
-  io.sockets.emit('player packets', players);
+  io.sockets.emit('allPackets', players);
 }, FRAME_RATE);
 
 // Start server
