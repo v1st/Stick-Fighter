@@ -120,7 +120,6 @@ function create() {
           kick,
           crouch
         } = playerInfo.keyCodes;
-        console.log(playerInfo.keyCodes)
         if (left.isDown) {
           enemy.flipX = true;
           enemy.anims.play('red left', true);
@@ -139,12 +138,12 @@ function create() {
   })
 
   // Remove a players data on disconnection
-  this.socket.on('disconnect', (playerId) => {
-    this.enemies.forEach((enemy) => {
-      if (playerId === enemy.playerId) {
-        enemy.destroy();
-      }
-    });
+  this.socket.on('removePlayer', (socketID) => {
+    let removePlayer = findPlayerByID(this, socketID);
+    removePlayer.destroy();
+    this.enemies = this.enemies.filter((enemy) => {
+      enemy.playerId !== String(socketID)
+    })
   });
 
   // ************* Socket testing *********************
@@ -192,10 +191,6 @@ function update() {
       }
     })
   }
-
-  this.enemies.forEach((enemy) => {
-
-  });
 }
 
 // Game functions
@@ -214,6 +209,7 @@ function addPlayer(self, playerInfo) {
 
 function addOtherPlayers(self, playerInfo, spriteSheet) {
   const otherPlayer = self.impact.add.sprite(playerInfo.x, playerInfo.y, spriteSheet);
+  // Unique socket Id attached to player
   otherPlayer.playerId = playerInfo.playerId;
   otherPlayer.body.accelGround = 300;
   otherPlayer.body.accelAir = 300;
@@ -287,4 +283,8 @@ function preloadAnimation(self, color, spriteSheet) {
     frameRate: 5,
     repeat: -1
   });
+}
+
+function findPlayerByID(scene, id) {
+  return scene.enemies.find((enemy) => enemy.playerId === id)
 }

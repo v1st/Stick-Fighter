@@ -26,7 +26,7 @@ app.get('/', function (req, res) {
 let players = {};
 
 io.on('connection', (socket) => {
-  console.log('new user connected')
+  console.log(`${socket.id} joined`)
   players[socket.id] = {
     playerId: socket.id,
     x: 550,
@@ -51,7 +51,8 @@ io.on('connection', (socket) => {
   // Disconnected player
   socket.on('disconnect', () => {
     // Remove disconnected player
-    console.log('user disconnect');
+    console.log(`${socket.id} user disconnect`);
+    socket.broadcast.emit('removePlayer', socket.id);
     delete players[socket.id];
   });
 });
